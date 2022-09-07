@@ -11,3 +11,5 @@ Supported algorithms:
 - Clustering
   - K-Means
   - Soft K-Means
+- Mixture Models
+  - Gaussian Mixture Model, GMM

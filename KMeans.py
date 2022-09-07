@@ -68,7 +68,7 @@ class KMeans:
             X: (M, d) or (B, M, d)
         Returns:
             If hard k-means, return assigned clusters' labels with shape of (M, ) or (B, M)
-            If soft k-means, return Weights of data belonging to each cluster with shape of (M, k) or (B, M, k)
+            If soft k-means, return weights of data belonging to each cluster with shape of (M, k) or (B, M, k)
         """
         weights, _ = self.calc_weights_cost(X)
         if self.soft:
@@ -81,25 +81,28 @@ class KMeans:
         return self.predict(X)
 
 
-def main():
-    X = np.concatenate([np.random.randn(100, 2) * np.array([[2, 4]]) + np.array([[-10, 6]]),
-                        np.random.randn(150, 2) * np.array([[6, 4]]) + np.array([[8, -15]]),
-                        np.random.randn(50, 2) * np.array([[1, 1]]) + np.array([[0, 0]])], axis=0)
+def _test():
+    X = np.concatenate([np.random.multivariate_normal(mean=[-10, 6], cov=[[2, 0], [0, 4]], size=100),
+                        np.random.multivariate_normal(mean=[8, -15], cov=[[6, 0], [0, 4]], size=150),
+                        np.random.multivariate_normal(mean=[0, 0], cov=[[1, 0], [0, 1]], size=50)], axis=0)
+    print(f'X.shape={X.shape}')
 
     kmeans = KMeans(k=3, data_dim=2, verbose=True)
     soft_kmeans = KMeans(k=3, data_dim=2, soft=True, soft_temparature=1., verbose=True)
     labels = kmeans.fit_predict(X)
     weights = soft_kmeans.fit_predict(X)
+    print(f'labels.shape={labels.shape}')
+    print(f'weights.shape={weights.shape}')
 
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(1, 4, figsize=(16, 4))
-    ax[0].scatter(X[labels == 0][:, 0], X[labels == 0][:, 1], c='C0')
-    ax[0].scatter(X[labels == 1][:, 0], X[labels == 1][:, 1], c='C1')
-    ax[0].scatter(X[labels == 2][:, 0], X[labels == 2][:, 1], c='C2')
+    ax[0].scatter(X[labels == 0][:, 0], X[labels == 0][:, 1], c='C0', s=10)
+    ax[0].scatter(X[labels == 1][:, 0], X[labels == 1][:, 1], c='C1', s=10)
+    ax[0].scatter(X[labels == 2][:, 0], X[labels == 2][:, 1], c='C2', s=10)
     c = np.log(weights)
-    ax[1].scatter(X[:, 0], X[:, 1], c=c[:, 0], cmap='Blues', s=30)
-    ax[2].scatter(X[:, 0], X[:, 1], c=c[:, 1], cmap='Oranges', s=30)
-    ax[3].scatter(X[:, 0], X[:, 1], c=c[:, 2], cmap='Greens', s=30)
+    ax[1].scatter(X[:, 0], X[:, 1], c=c[:, 0], cmap='Blues', s=10)
+    ax[2].scatter(X[:, 0], X[:, 1], c=c[:, 1], cmap='Oranges', s=10)
+    ax[3].scatter(X[:, 0], X[:, 1], c=c[:, 2], cmap='Greens', s=10)
     ax[0].axis('scaled')
     ax[1].axis('scaled')
     ax[2].axis('scaled')
@@ -108,5 +111,44 @@ def main():
     plt.close(fig)
 
 
+def _test_batch():
+    X = np.stack([np.concatenate([np.random.multivariate_normal(mean=[-10, 6], cov=[[2, 0], [0, 4]], size=100),
+                                  np.random.multivariate_normal(mean=[8, -15], cov=[[6, 0], [0, 4]], size=150),
+                                  np.random.multivariate_normal(mean=[0, 0], cov=[[1, 0], [0, 1]], size=50)], axis=0),
+                  np.concatenate([np.random.multivariate_normal(mean=[15, -6], cov=[[3, 0], [0, 4]], size=100),
+                                  np.random.multivariate_normal(mean=[8, 10], cov=[[4, 0], [0, 1]], size=100),
+                                  np.random.multivariate_normal(mean=[-1, 0], cov=[[1, 0], [0, 1]], size=100)], axis=0),
+                  np.concatenate([np.random.multivariate_normal(mean=[-5, 6], cov=[[2, 0], [0, 4]], size=250),
+                                  np.random.multivariate_normal(mean=[0, -15], cov=[[2, 0], [0, 3]], size=30),
+                                  np.random.multivariate_normal(mean=[10, 0], cov=[[1, 0], [0, 1]], size=20)], axis=0)],
+                 axis=0)
+    print(f'X.shape={X.shape}')
+
+    kmeans = KMeans(k=3, data_dim=2, verbose=True)
+    soft_kmeans = KMeans(k=3, data_dim=2, soft=True, soft_temparature=1., verbose=True)
+    labels = kmeans.fit_predict(X)
+    weights = soft_kmeans.fit_predict(X)
+    print(f'labels.shape={labels.shape}')
+    print(f'weights.shape={weights.shape}')
+
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(3, 4, figsize=(12, 8))
+    for i in range(3):
+        ax[i][0].scatter(X[i][labels[i] == 0][:, 0], X[i][labels[i] == 0][:, 1], c='C0', s=10)
+        ax[i][0].scatter(X[i][labels[i] == 1][:, 0], X[i][labels[i] == 1][:, 1], c='C1', s=10)
+        ax[i][0].scatter(X[i][labels[i] == 2][:, 0], X[i][labels[i] == 2][:, 1], c='C2', s=10)
+        c = np.log(weights[i])
+        ax[i][1].scatter(X[i][:, 0], X[i][:, 1], c=c[:, 0], cmap='Blues', s=10)
+        ax[i][2].scatter(X[i][:, 0], X[i][:, 1], c=c[:, 1], cmap='Oranges', s=10)
+        ax[i][3].scatter(X[i][:, 0], X[i][:, 1], c=c[:, 2], cmap='Greens', s=10)
+        ax[i][0].axis('square')
+        ax[i][1].axis('square')
+        ax[i][2].axis('square')
+        ax[i][3].axis('square')
+    plt.show()
+    plt.close(fig)
+
+
 if __name__ == '__main__':
-    main()
+    _test()
+    _test_batch()
